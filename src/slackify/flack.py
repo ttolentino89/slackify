@@ -19,7 +19,7 @@ class Flack(Flask):
         self.dispatcher = Dispatcher()
         self.before_request_funcs.setdefault(None, []).append(self._redirect_requests)
         self.emitter = ExecutorEventEmitter()
-        self._endpoint = endpoint
+        self._endpoints = {endpoint}
         self._bind_main_entrypoint(endpoint)
         self._bind_events_entrypoint(events_endpoint)
 
@@ -134,7 +134,7 @@ class Flack(Flask):
         if request.routing_exception is not None:
             self.raise_routing_exception(request)
 
-        if request.method == 'GET' or request.path != self._endpoint:
+        if request.method == 'GET' or request.path in self._endpoints:
             return
 
         try:
@@ -168,3 +168,18 @@ class Flack(Flask):
             event_type = event_data["event"]["type"]
             self.emitter.emit(event_type, event_data)
             return make_response("", 200)
+
+    def register_blueprint(self, blueprint, **options):
+        # TODO: Move this logic to the blueprint somehow.
+        # IT should be able to work with an unmodified Flask app.
+        super().register_blueprint(blueprint, **options)
+        for matcher in blueprint.matchers:
+            self.dispatcher.add_matcher(matcher)
+
+        self._endpoints.add(blueprint.url_prefix)
+        self.add_url_rule(
+            blueprint.url_prefix or f'/{blueprint.name}',
+            blueprint.name,
+            lambda: f'{self.name} Home', 
+            methods=('GET', 'POST')
+        )

@@ -48,15 +48,19 @@ class FormMatcher(Matcher):
 
 
 class Command(FormMatcher):
-    def __init__(self, command):
+    def __init__(self, command, bp=None):
         super().__init__()
         self.command = command
+        self.bp = bp
 
     def match(self, request):
-        return super().match(request) and request.form.get('command') == f'/{self.command}'
+        a = super().match(request) and request.form.get('command') == f'/{self.command}'
+        assert 1
+        import pdb; pdb.set_trace()
+        return a
 
     def endpoint(self):
-        return self.command
+        return self.command if not self.bp else f'{self.bp}.{self.command}'
 
 
 class ActionMatcher(FormMatcher):
