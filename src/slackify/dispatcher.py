@@ -54,10 +54,7 @@ class Command(FormMatcher):
         self.bp = bp
 
     def match(self, request):
-        a = super().match(request) and request.form.get('command') == f'/{self.command}'
-        assert 1
-        import pdb; pdb.set_trace()
-        return a
+        return super().match(request) and request.form.get('command') == f'/{self.command}'
 
     def endpoint(self):
         return self.command if not self.bp else f'{self.bp}.{self.command}'
