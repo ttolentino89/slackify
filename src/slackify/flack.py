@@ -168,18 +168,3 @@ class Flack(Flask):
             event_type = event_data["event"]["type"]
             self.emitter.emit(event_type, event_data)
             return make_response("", 200)
-
-    def register_blueprint(self, blueprint, **options):
-        # TODO: Move this logic to the blueprint somehow.
-        # IT should be able to work with an unmodified Flask app.
-        super().register_blueprint(blueprint, **options)
-        for matcher in blueprint.matchers:
-            self.dispatcher.add_matcher(matcher)
-
-        self._endpoints.add(blueprint.url_prefix)
-        self.add_url_rule(
-            blueprint.url_prefix or f'/{blueprint.name}',
-            blueprint.name,
-            lambda: f'{self.name} Home', 
-            methods=('GET', 'POST')
-        )
