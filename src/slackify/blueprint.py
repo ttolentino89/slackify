@@ -5,14 +5,22 @@ from slackify.dispatcher import Command, Dispatcher
 
 logger = logging.getLogger(__name__)
 
-class FlackBlueprint(Blueprint):
+
+class Bot:
+
+    def __init__(self, bp=None):
+        pass
 
 
-    def __init__(self, name, import_name, **kwargs):
-        super().__init__(name, import_name, **kwargs)
-        self._endpoint = self.url_prefix or '/'
-        self._bind_main_endpoint(self.url_prefix)
-        self.before_request(self._redirect_requests)
+class SlackifyBlueprint:
+
+    endpoint = None
+
+    def init_bp(self, bp):
+        """Modify blueprint to provide slackify functionality"""
+        bp.before_request(self._redirect_requests)
+        self.endpoint = bp.url_prefix or '/'
+        self._bind_main_endpoint(bp, self.endpoint)
         self.dispatcher = Dispatcher()
         self.matchers = []
 
@@ -29,32 +37,23 @@ class FlackBlueprint(Blueprint):
         except StopIteration:
             logger.info('No handler matched this request')
             return
-        except Exception as e:
+        except Exception:
             logger.exception('Something bad happened.')
             return
 
         rule = request.url_rule
         rule.endpoint = endpoint
 
-    def _bind_main_endpoint(self, url_prefix):
-        self.add_url_rule('/', f'__{self.name}', lambda: f'{self.name} Home', methods=('GET', 'POST'))
-
+    def _bind_main_endpoint(self, bp, route):
+        bp.add_url_rule(
+            route,
+            f'__{bp.name}',
+            lambda: f'{bp.name} Home',
+            methods=('GET', 'POST')
+        )
 
     def command(self, func=None, **options):
-        """A decorator that is used to register a function as a command handler.
 
-           It can be used as a plain decorator or as a parametrized decorator factory.
-
-        Usage:
-            >>>@command
-            >>>def hola():
-            >>>    print('hola', kwargs)
-
-
-            >>>@command(name='goodbye')
-            >>>def chau():
-            >>>    print('chau', kwargs)
-        """
         def decorate(func):
             command = options.pop('name', func.__name__)
             rule = f'/{command}' if not command.startswith('/') else command
@@ -67,3 +66,17 @@ class FlackBlueprint(Blueprint):
             return decorate(func)
         else:
             return decorate
+
+
+class FlackBlueprint(Blueprint):
+
+    def __init__(self, name, import_name, **kwargs):
+        super().__init__(name, import_name, **kwargs)
+        self.slackify = SlackifyBlueprint()
+        self.slackify.init_bp(self)
+
+
+class SlackifyBP:
+
+    def __init__(self):
+        pass
